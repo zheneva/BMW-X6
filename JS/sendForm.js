@@ -8,7 +8,7 @@ const sendData = (data, callBack, falseCallBack) => {            //! функц�
         if (request.readyState !== 4) return;                      //! пока не достигнет конечной стадии прирываем работу функции затем
         if (request.status === 200 || request.status === 201) {
             const response = JSON.parse(request.responseText)     //! если статус "правильный" парсим(JSON.parse(request.responseText))данные из сервера т.к. они приходят в виде строки json (из json --> в объект js)
-            console.log(response)
+            //!console.log(response)
 
             callBack(response.id);                                //! вызываем callBack функцию с (response.id) в качестве параметра(данные из сервера в виде объекта)
         } else {
@@ -25,31 +25,55 @@ const sendData = (data, callBack, falseCallBack) => {            //! функц�
 const formElems = document.querySelectorAll('.form');        //! получаем все формы на странице по классу '.form'
 
 const formHandler = (form) => {
+    const smallElem = document.createElement('small');
+    form.append(smallElem);                                     //! добавили блок с будующей подсказкой(пока пустой)
+
     form.addEventListener('submit', (event) => {              //! навешали слушатель события отправки формы (стандартное браузерное событие)
         event.preventDefault();                                   //! отключили перезагрузку страницы (отправка не проиходит)               
         const data = {};                                      //! создали пустой объект data
+        let flag = true;                                      //! нужен дл проверки заподненочти полей 
 
-        for (const { name, value } of form.elements) {                    //! обращаемся к свойству форм (elements содержат все элементы формы)   //! применено делегирование {name, value}
+        const buttonSubmit = form.querySelector('.button[type="submit"]')
+
+
+        for (const elem of form.elements) {                    //! обращаемся к свойству форм (elements содержат все элементы формы)  
+
+            const { name, value } = elem;                      //! применена деструтуризация {name, value} "выдернули свойства 'name' и 'value' у объекта"
+
             if (name) {
-                data[name] = value                                      //! создаем новое свойство name в объекте data
+                if (value.trim()){                                              //! trim()  удаляет пробелы в начале и в конце введенной строки (нужно чтобы не пропустить рол заполненные пробелами)
+                    elem.style.border = '';
+                    data[name] = value.trim();                                  //! создаем новое свойство name в объекте data
+                } else{
+                    elem.style.border = '1px solid red';
+                    flag - false;                                               //! поле не заролнено  flag= false
+                    elem.value = '';
+                }
             }
         }
 
-        const smallElem = document.createElement('small');
+        if (!flag){
+            return smallElem.textContent = 'заполните все поля'                 //! если хоть одно поле не заполнено 
+        }
 
         sendData(JSON.stringify(data),                         //!вызываем sendData с параметром data приведенным к виду строки JSON через метод (JSON.stringify(data)
             (id) => {
                 smallElem.innerHTML = 'успешно отправлено #' + id + '! <br> скоро с вами свяжутся';    //!
                 smallElem.style.color = 'green';                                                        //!     callBack
-                form.append(smallElem);                                                                 //!
+                buttonSubmit.disabled   = true;  
+
+                setTimeout( () =>{
+                    smallElem.textContent = '';
+                    buttonSubmit.disabled = false;
+                }, 5000)
             },
             (err) => {
-                smallElem.textContent = 'error';                                                      //!
+                smallElem.textContent = 'error';                                                        //!
                 smallElem.style.color = 'red';                                                          //!     falseCallBack
-                form.append(smallElem);                                                                 //!
+                                                                                                        //!
             });
 
-        form.reset();                                            //! очистили поля флрмы
+        form.reset();                                            //! очистили поля формы
 
     })
 };
